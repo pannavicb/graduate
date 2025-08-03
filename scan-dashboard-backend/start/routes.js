@@ -1,25 +1,10 @@
-'use strict'
-
-/*
-|--------------------------------------------------------------------------
-| Routes
-|--------------------------------------------------------------------------
-|
-| Http routes are entry points to your web application. You can create
-| routes for different URLs and bind Controller actions to them.
-|
-| A complete guide on routing is available here.
-| http://adonisjs.com/docs/4.1/routing
-|
-*/
-
-/** @type {typeof import('@adonisjs/framework/src/Route/Manager')} */
 const Route = use('Route')
 
-Route.get('/', () => {
-  return { greeting: 'Hello world in JSON' }
-})
+//Backend
+Route.get('/graduates', 'GraduateController.show')
 
-Route.get('/scan-logs', 'ScanLogController.index')
-Route.post('/scan-logs', 'ScanLogController.store')
-Route.put('/scan-logs/:id', 'ScanLogController.update') // สำหรับ time out
+// API ดึงข้อมูลรายชื่อผู้รับปริญญา
+Route.get('/api/graduates', 'GraduatesController.index')
+
+// API อัปเดตสถานะ (จาก ESP32 หรือ ระบบอื่น)
+Route.post('/api/graduates/update-status', 'GraduatesController.updateStatus')

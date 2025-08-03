@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>รายชื่อนักศึกษา</title>
+</head>
+<body>
+  <h1>รายชื่อนักศึกษา</h1>
+  <table border="1" cellpadding="5" cellspacing="0">
+    <thead>
+      <tr>
+        <th>ลำดับ</th>
+        <th>รหัสนักศึกษา</th>
+        <th>ชื่อ-สกุล</th>
+        <th>สถานะ</th>
+      </tr>
+    </thead>
+    <tbody>
+      @each(graduates as graduate)
+        <tr>
+          <td>{{ graduate.order_no }}</td>
+          <td>{{ graduate.student_id }}</td>
+          <td>{{ graduate.name }}</td>
+          <td>{{ graduate.status }}</td>
+        </tr>
+      @endeach
+    </tbody>
+  </table>
+</body>
+</html>

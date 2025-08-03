@@ -1,25 +1,44 @@
 'use strict'
 
-/*
-|--------------------------------------------------------------------------
-| Http server
-|--------------------------------------------------------------------------
-|
-| This file bootstraps Adonisjs to start the HTTP server. You are free to
-| customize the process of booting the http server.
-|
-| """ Loading ace commands """
-|     At times you may want to load ace commands when starting the HTTP server.
-|     Same can be done by chaining `loadCommands()` method after
-|
-| """ Preloading files """
-|     Also you can preload files by calling `preLoad('path/to/file')` method.
-|     Make sure to pass a relative path from the project root.
-*/
-
 const { Ignitor } = require('@adonisjs/ignitor')
+const path = require('path')
+const express = require('express')
 
+// ✅ Express App สำหรับ React UI + Socket.IO
+const app = express()
+const http = require('http').createServer(app)
+const io = require('socket.io')(http, {
+  cors: { origin: '*' }
+})
+
+// 📡 WebSocket server
+io.on('connection', (socket) => {
+  console.log('👤 Client connected:', socket.id)
+
+  socket.on('update_status', (data) => {
+    io.emit('status_update', data)  // Broadcast ถึงทุก client
+  })
+
+  socket.on('disconnect', () => {
+    console.log('❌ Client disconnected:', socket.id)
+  })
+})
+
+// ⚙️ Serve React build (from /public/build)
+const buildPath = path.join(__dirname, 'public', 'build')
+app.use(express.static(buildPath))
+app.get('*', (req, res) => {
+  res.sendFile(path.join(buildPath, 'index.html'))
+})
+
+// 🚀 Start AdonisJS HTTP server (port 3333)
 new Ignitor(require('@adonisjs/fold'))
   .appRoot(__dirname)
   .fireHttpServer()
+  .then(() => {
+    // ✅ Start WebSocket + React dashboard server on port 5000
+    http.listen(5000, () => {
+      console.log('🧠 Socket.IO + React Dashboard running at http://localhost:5000')
+    })
+  })
   .catch(console.error)

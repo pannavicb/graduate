@@ -27,3 +27,11 @@ Route.post('/users', 'UserController.store')
 Route.get('/users/:id', 'UserController.show')
 Route.put('/users/:id', 'UserController.update')
 Route.delete('/users/:id', 'UserController.destroy')
+
+Route.group(() => {
+  Route.get('graduates', 'GraduateController.index')
+  Route.post('graduates', 'GraduateController.store')
+  Route.get('graduates/:id', 'GraduateController.show')
+  Route.put('graduates/:id', 'GraduateController.update')
+  Route.delete('graduates/:id', 'GraduateController.destroy')
+}).prefix('api')

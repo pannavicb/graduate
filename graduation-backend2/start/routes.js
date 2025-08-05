@@ -22,6 +22,7 @@ Route.get('/', () => {
 })
 
  Route.get('/dashboard', 'DashboardController.index')
+ Route.get('/graduates', 'GraduatesController.index')
 
   // User API CRUD routes
   Route.get('/users', 'UserController.index')

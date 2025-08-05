@@ -5,6 +5,8 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import UserForm from './components/UserForm'
 import UserList from './components/UserList'
+import DashboardPage from './components/Dashboard' // ✅ เพิ่มการ import
+import GraduatedPage from './components/GraduationPage' // ✅ เพิ่มการ import
 
 function UsersPage() {
   const [refreshKey, setRefreshKey] = useState(0)
@@ -57,6 +59,8 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/users" element={<UsersPage />} />
         <Route path="/about" element={<About />} />
+        <Route path="/dashboard" element={<DashboardPage />} /> {/* ✅ เพิ่ม Route นี้ */}
+        <Route path="/graduated" element={<GraduatedPage />} /> {/* ✅ เพิ่ม Route นี้ */}
       </Routes>
     </Router>
   )

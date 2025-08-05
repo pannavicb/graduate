@@ -1,4 +1,3 @@
-// src/components/UserList.jsx
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
 import { Table, message } from 'antd'
@@ -15,12 +14,7 @@ const UserList = ({ onSelectUser }) => {
     setLoading(true)
     try {
       const res = await axios.get('http://localhost:3333/users')
-      const rawData = res.data
-      const data = Array.isArray(rawData)
-        ? rawData
-        : Array.isArray(rawData.users)
-        ? rawData.users
-        : []
+      const data = Array.isArray(res.data.data) ? res.data.data : []
       setUsers(data)
     } catch (error) {
       console.error('โหลดข้อมูลผิดพลาด:', error)
@@ -33,39 +27,50 @@ const UserList = ({ onSelectUser }) => {
   const columns = [
     {
       title: '#',
-      dataIndex: 'index',
       key: 'index',
-      render: (text, record, index) => index + 1,
+      render: (_, __, index) => index + 1,
       width: '5%',
+      align: 'center',
     },
     {
       title: 'ชื่อผู้ใช้',
       dataIndex: 'username',
       key: 'username',
+      sorter: (a, b) => a.username.localeCompare(b.username),
+      ellipsis: true,
     },
     {
       title: 'อีเมล',
       dataIndex: 'email',
       key: 'email',
+      sorter: (a, b) => a.email.localeCompare(b.email),
+      ellipsis: true,
     },
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-r from-indigo-100 via-purple-100 to-pink-100 py-10 px-4">
-      <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-xl p-8 ring-1 ring-gray-200">
-        <h1 className="text-3xl font-bold text-center text-indigo-700 mb-8">รายชื่อผู้ใช้งานระบบ</h1>
+    <div className="min-h-screen bg-gradient-to-r from-indigo-100 via-purple-100 to-pink-100 py-10 px-4 flex justify-center items-start">
+      <div className="w-full max-w-6xl bg-white rounded-3xl shadow-xl p-6 md:p-10 ring-1 ring-gray-300">
+        <h1 className="text-2xl md:text-3xl font-bold text-center text-indigo-800 mb-6">
+          รายชื่อผู้ใช้งานระบบ
+        </h1>
 
-        <Table
-          dataSource={users}
-          columns={columns}
-          rowKey="id"
-          loading={loading}
-          onRow={(record) => ({
-            onClick: () => onSelectUser && onSelectUser(record),
-            style: { cursor: 'pointer' },
-          })}
-          pagination={{ pageSize: 10 }}
-        />
+        {/* Responsive Table Scroll */}
+        <div className="overflow-x-auto">
+          <Table
+            dataSource={users}
+            columns={columns}
+            rowKey="id"
+            loading={loading}
+            onRow={(record) => ({
+              onClick: () => onSelectUser?.(record),
+              style: { cursor: 'pointer' },
+            })}
+            pagination={{ pageSize: 10, showSizeChanger: true }}
+            scroll={{ x: '100%' }} // for responsive scroll on small screens
+            size="middle"
+          />
+        </div>
       </div>
     </div>
   )

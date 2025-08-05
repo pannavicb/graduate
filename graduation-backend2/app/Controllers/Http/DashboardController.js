@@ -1,30 +1,55 @@
 'use strict'
 
-const User = use('App/Models/User')
 const Database = use('Database')
-const moment = require('moment')
 
 class DashboardController {
   async index({ response }) {
-    // 1. จำนวนผู้ใช้ทั้งหมด
-    const totalUsers = await User.getCount()
+    try {
+      // รวมจำนวนทั้งหมด
+      const totalRes = await Database.from('graduates').count('* as count').first()
+      const total = totalRes.count || 0
 
-    // 2. จำนวนผู้ใช้ที่สมัครวันนี้
-    const today = moment().startOf('day').format('YYYY-MM-DD HH:mm:ss')
-    const registeredToday = await Database
-      .from('users')
-      .where('created_at', '>=', today)
-      .count('* as count')
-    const usersToday = registeredToday[0].count
+      // จำนวนรอเรียก (status = 'รอเข้ารับ' หรือ 'waiting')
+      const waitingRes = await Database.from('graduates').where('status', 'รอเข้ารับ').count('* as count').first()
+      const waiting = waitingRes.count || 0
 
-    // 3. ผู้ใช้ล่าสุด 5 คน
-    const latestUsers = await User.query().orderBy('created_at', 'desc').limit(5).fetch()
+      // จำนวนอยู่บนเวที (status = 'อยู่บนเวที' หรือ 'called_stage')
+      const calledStageRes = await Database.from('graduates').where('status', 'อยู่บนเวที').count('* as count').first()
+      const called_stage = calledStageRes.count || 0
 
-    return response.ok({
-      total_users: totalUsers,
-      users_registered_today: usersToday,
-      latest_users: latestUsers
-    })
+      // จำนวนรับเรียบร้อย (status = 'รับเรียบร้อย' หรือ 'called_done')
+      const calledDoneRes = await Database.from('graduates').where('status', 'รับเรียบร้อย').count('* as count').first()
+      const called_done = calledDoneRes.count || 0
+
+      // จำนวนขาด (status = 'ขาด')
+      const absentRes = await Database.from('graduates').where('status', 'ขาด').count('* as count').first()
+      const absent = absentRes.count || 0
+
+      // รายชื่อผู้เข้าร่วมทั้งหมด เรียงตาม order_no
+      const users = await Database.from('graduates').orderBy('order_no').select('*')
+
+      // สมมติปีการศึกษาไว้ (แก้เป็นจริงตามข้อมูลหรือ config)
+      const academic_year = 2567
+
+      return response.json({
+        status: 'success',
+        data: {
+          total,
+          waiting,
+          called_stage,
+          called_done,
+          absent,
+          academic_year,
+          users,
+        },
+      })
+    } catch (error) {
+      console.error('DashboardController index error:', error)
+      return response.status(500).json({
+        status: 'error',
+        message: 'เกิดข้อผิดพลาดในการโหลดข้อมูล',
+      })
+    }
   }
 }
 

@@ -1,12 +1,20 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
-import { Form, Input, Button, Alert, Space } from 'antd'
+import {
+  Form,
+  Input,
+  Button,
+  Card,
+  Space,
+  message,
+  Typography,
+} from 'antd'
+
+const { Title } = Typography
 
 const UserForm = ({ onUserAdded, selectedUser, onCancel }) => {
   const [form] = Form.useForm()
   const [loading, setLoading] = useState(false)
-  const [success, setSuccess] = useState('')
-  const [error, setError] = useState('')
 
   useEffect(() => {
     if (selectedUser) {
@@ -15,19 +23,13 @@ const UserForm = ({ onUserAdded, selectedUser, onCancel }) => {
         email: selectedUser.email || '',
         password: '',
       })
-      setSuccess('')
-      setError('')
     } else {
       form.resetFields()
-      setSuccess('')
-      setError('')
     }
   }, [selectedUser, form])
 
   const onFinish = async (values) => {
     setLoading(true)
-    setSuccess('')
-    setError('')
 
     try {
       if (selectedUser) {
@@ -35,19 +37,20 @@ const UserForm = ({ onUserAdded, selectedUser, onCancel }) => {
           username: values.username,
           email: values.email,
         }
-        if (values.password && values.password.trim() !== '') {
+        if (values.password?.trim()) {
           payload.password = values.password
         }
         await axios.put(`http://localhost:3333/users/${selectedUser.id}`, payload)
-        setSuccess('แก้ไขผู้ใช้เรียบร้อยแล้ว')
+        message.success('✅ แก้ไขผู้ใช้เรียบร้อยแล้ว')
       } else {
         await axios.post('http://localhost:3333/users', values)
-        setSuccess('เพิ่มผู้ใช้เรียบร้อยแล้ว')
+        message.success('✅ เพิ่มผู้ใช้เรียบร้อยแล้ว')
         form.resetFields()
       }
-      if (onUserAdded) onUserAdded()
+      onUserAdded?.()
     } catch (err) {
-      setError(err.response?.data?.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล')
+      const msg = err.response?.data?.message || '❌ เกิดข้อผิดพลาดในการบันทึกข้อมูล'
+      message.error(msg)
     } finally {
       setLoading(false)
     }
@@ -55,24 +58,22 @@ const UserForm = ({ onUserAdded, selectedUser, onCancel }) => {
 
   const handleReset = () => {
     form.resetFields()
-    setSuccess('')
-    setError('')
   }
 
   const handleCancel = () => {
     handleReset()
-    if (onCancel) onCancel()
+    onCancel?.()
   }
 
   return (
-    <div className="max-w-xl mx-auto bg-white rounded-xl shadow-lg p-6 mt-6">
-      <h2 className="text-xl font-bold text-indigo-700 mb-4">
-        {selectedUser ? 'แก้ไขผู้ใช้งาน' : 'เพิ่มผู้ใช้งานใหม่'}
-      </h2>
-
-      {success && <Alert message={success} type="success" showIcon closable onClose={() => setSuccess('')} />}
-      {error && <Alert message={error} type="error" showIcon closable onClose={() => setError('')} style={{ marginBottom: 16 }} />}
-
+    <Card
+      title={
+        <Title level={4} style={{ margin: 0 }}>
+          {selectedUser ? '🛠 แก้ไขผู้ใช้งาน' : '➕ เพิ่มผู้ใช้งานใหม่'}
+        </Title>
+      }
+      style={{ maxWidth: 600, margin: '24px auto' }}
+    >
       <Form
         form={form}
         layout="vertical"
@@ -111,9 +112,9 @@ const UserForm = ({ onUserAdded, selectedUser, onCancel }) => {
               message: 'กรุณากรอกรหัสผ่าน',
             },
           ]}
-          tooltip={selectedUser ? 'กรอกใหม่ถ้าต้องการเปลี่ยนรหัสผ่าน' : ''}
+          tooltip={selectedUser ? 'หากต้องการเปลี่ยนรหัสผ่าน กรุณากรอกใหม่' : ''}
         >
-          <Input.Password placeholder={selectedUser ? 'กรอกใหม่ถ้าต้องการเปลี่ยน' : ''} disabled={loading} />
+          <Input.Password placeholder={selectedUser ? 'หากต้องการเปลี่ยนรหัสผ่าน' : ''} disabled={loading} />
         </Form.Item>
 
         <Form.Item>
@@ -132,7 +133,7 @@ const UserForm = ({ onUserAdded, selectedUser, onCancel }) => {
           </Space>
         </Form.Item>
       </Form>
-    </div>
+    </Card>
   )
 }
 

@@ -21,8 +21,7 @@ Route.get('/', () => {
   return { greeting: 'Hello world in JSON' }
 })
 
-
-Route.group(() => {
+ Route.get('/dashboard', 'DashboardController.index')
 
   // User API CRUD routes
   Route.get('/users', 'UserController.index')
@@ -38,4 +37,4 @@ Route.group(() => {
   Route.put('graduates/:id', 'GraduateController.update')
   Route.delete('graduates/:id', 'GraduateController.destroy')
 
-}).prefix('api')
+

@@ -1,19 +1,34 @@
+// src/components/UserList.jsx
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
 import { Table, message } from 'antd'
 
 const UserList = ({ onSelectUser }) => {
   const [users, setUsers] = useState([])
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    axios.get('http://localhost:3333/users')
-      .then(response => {
-        setUsers(response.data)
-      })
-      .catch(error => {
-        message.error('เกิดข้อผิดพลาดในการโหลดข้อมูลผู้ใช้')
-      })
+    fetchUsers()
   }, [])
+
+  const fetchUsers = async () => {
+    setLoading(true)
+    try {
+      const res = await axios.get('http://localhost:3333/users')
+      const rawData = res.data
+      const data = Array.isArray(rawData)
+        ? rawData
+        : Array.isArray(rawData.users)
+        ? rawData.users
+        : []
+      setUsers(data)
+    } catch (error) {
+      console.error('โหลดข้อมูลผิดพลาด:', error)
+      message.error('เกิดข้อผิดพลาดในการโหลดข้อมูลผู้ใช้')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const columns = [
     {
@@ -44,14 +59,11 @@ const UserList = ({ onSelectUser }) => {
           dataSource={users}
           columns={columns}
           rowKey="id"
-          onRow={(record) => {
-            return {
-              onClick: () => {
-                onSelectUser(record)
-              },
-              style: { cursor: 'pointer' },
-            }
-          }}
+          loading={loading}
+          onRow={(record) => ({
+            onClick: () => onSelectUser && onSelectUser(record),
+            style: { cursor: 'pointer' },
+          })}
           pagination={{ pageSize: 10 }}
         />
       </div>

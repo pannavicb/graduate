@@ -1,25 +1,15 @@
-'use strict'
+const io = require('socket.io')(5000, {
+  cors: { origin: '*' }
+})
 
-/*
-|--------------------------------------------------------------------------
-| Http server
-|--------------------------------------------------------------------------
-|
-| This file bootstraps Adonisjs to start the HTTP server. You are free to
-| customize the process of booting the http server.
-|
-| """ Loading ace commands """
-|     At times you may want to load ace commands when starting the HTTP server.
-|     Same can be done by chaining `loadCommands()` method after
-|
-| """ Preloading files """
-|     Also you can preload files by calling `preLoad('path/to/file')` method.
-|     Make sure to pass a relative path from the project root.
-*/
+io.on('connection', socket => {
+  console.log('Client connected:', socket.id)
 
-const { Ignitor } = require('@adonisjs/ignitor')
+  // ฟัง event จาก backend เช่น การอัปเดตสถานะ
+  socket.on('update_status', data => {
+    // Broadcast ข้อมูลสถานะให้ทุก client
+    io.emit('status_update', data)
+  })
+})
 
-new Ignitor(require('@adonisjs/fold'))
-  .appRoot(__dirname)
-  .fireHttpServer()
-  .catch(console.error)
+console.log('Socket.io server running on port 5000')

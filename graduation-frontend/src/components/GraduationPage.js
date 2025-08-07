@@ -65,7 +65,7 @@ const Dashboard = () => {
   const [pageSize, setPageSize] = useState(10)
   const [currentPage, setCurrentPage] = useState(0)
   const [selectedRowKey, setSelectedRowKey] = useState(null)
-  const [isEndReached, setIsEndReached] = useState(false)  // สถานะสิ้นสุดข้อมูล
+  const [isEndReached, setIsEndReached] = useState(false)
 
   const fetchGraduates = useCallback(async () => {
     setLoading(true)
@@ -77,7 +77,7 @@ const Dashboard = () => {
         calculateSummary(data)
         setCurrentIndex(-1)
         setCurrentPage(0)
-        setIsEndReached(false) // รีเซ็ตสถานะเมื่อโหลดข้อมูลใหม่
+        setIsEndReached(false)
       } else {
         message.error('โหลดข้อมูลไม่สำเร็จ')
       }
@@ -110,7 +110,6 @@ const Dashboard = () => {
   const totalPages = Math.ceil(graduates.length / pageSize)
   const currentPageData = graduates.slice(currentPage * pageSize, (currentPage + 1) * pageSize)
 
-  // Auto scroll effect with end detection
   useEffect(() => {
     if (!autoScroll || graduates.length === 0) return undefined
 
@@ -133,16 +132,15 @@ const Dashboard = () => {
           setIsEndReached(true)
           setAutoScroll(false)
           message.info('🎉 สิ้นสุดข้อมูลแล้ว')
-          return prevIndex  // หยุดที่บรรทัดสุดท้าย
+          return prevIndex
         }
 
-        // อัปเดตสถานะ "รับเรียบร้อย" พร้อมเวลาเรียก
         const newGrads = [...graduates]
         const nowStr = formatDateTimeThai(new Date())
         newGrads[globalIndex] = {
           ...newGrads[globalIndex],
           call_time: nowStr,
-          status: 'รับเรียบร้อย',
+          status: 'กำลังเข้ารับ',
         }
         setGraduates(newGrads)
         setCurrentPage(nextPage)
@@ -232,7 +230,7 @@ const Dashboard = () => {
     setPageSize(value)
     setCurrentPage(0)
     setCurrentIndex(-1)
-    setIsEndReached(false)  // รีเซ็ตสถานะเมื่อเปลี่ยนขนาดหน้า
+    setIsEndReached(false)
   }
 
   return (
@@ -242,13 +240,18 @@ const Dashboard = () => {
           background-color: #d6f5d6 !important;
           transition: background-color 0.5s ease;
         }
+        @media screen and (max-width: 768px) {
+          .ant-table {
+            font-size: 13px;
+          }
+        }
       `}</style>
 
       <div
         style={{
-          padding: 24,
-          maxWidth: 1200,
-          margin: 'auto',
+          padding: '2rem 1rem',
+          maxWidth: '100%',
+          margin: '0 auto',
           backgroundColor: '#f9fafb',
           minHeight: '100vh',
           fontFamily: "'Sarabun', 'Segoe UI', sans-serif",
@@ -259,7 +262,7 @@ const Dashboard = () => {
           <Title level={3}>ปีการศึกษา {academicYear - 1}</Title>
           <CurrentDateTime />
           <Paragraph style={{ marginTop: 16 }}>
-            ระบบแสดงสถานะการเรียกชื่อเข้ารับปริญญาแบบเรียลไทม์
+            แสดงรายชื่อสถานะการเรียกชื่อเข้ารับปริญญา
           </Paragraph>
         </div>
 
@@ -272,7 +275,7 @@ const Dashboard = () => {
             { label: '🧾 รวมทั้งหมด', dataKey: 'total', color: '#333' },
           ].map(({ label, dataKey, color }) => (
             <Col xs={24} sm={12} md={8} lg={6} key={dataKey}>
-              <Card title={label} bordered={false}>
+              <Card title={label} bordered={false} style={{ width: '100%' }}>
                 <Title level={3} style={{ color, textAlign: 'center' }}>
                   {summary[dataKey]}
                 </Title>
@@ -282,7 +285,7 @@ const Dashboard = () => {
         </Row>
 
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <Space size="middle" wrap>
+          <Space size="middle" wrap style={{ justifyContent: 'center', width: '100%' }}>
             <Button type="primary" onClick={() => message.info('เรียกชื่อถัดไป')}>
               📢 เรียกชื่อถัดไป
             </Button>
@@ -347,7 +350,7 @@ const Dashboard = () => {
               record.id || record.student_id || `row-${currentPage * pageSize + index}`
             }
             bordered
-            scroll={{ x: '100%' }}
+            scroll={{ x: 'max-content' }}
           />
         </Spin>
 
@@ -379,7 +382,6 @@ const Dashboard = () => {
           </Button>
         </div>
 
-        {/* แสดงข้อความสิ้นสุดข้อมูล */}
         {isEndReached && (
           <div style={{ textAlign: 'center', marginTop: 16, color: '#f5222d', fontWeight: 'bold' }}>
             🎉 สิ้นสุดข้อมูลแล้ว

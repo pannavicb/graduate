@@ -8,3 +8,6 @@ Route.get('/api/graduates', 'GraduatesController.index')
 
 // API อัปเดตสถานะ (จาก ESP32 หรือ ระบบอื่น)
 Route.post('/api/graduates/update-status', 'GraduatesController.updateStatus')
+
+// start/routes.js
+Route.post('/graduates/import-csv', 'GraduateController.importCSV')

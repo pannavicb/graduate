@@ -180,6 +180,7 @@ const Dashboard = () => {
       dataIndex: 'student_id',
       key: 'student_id',
       align: 'center',
+      width: 120,
     },
     {
       title: 'ชื่อ - นามสกุล',
@@ -192,6 +193,7 @@ const Dashboard = () => {
       key: 'status',
       render: getStatusTag,
       align: 'center',
+      width: 140,
     },
     {
       title: 'เวลาที่ถูกเรียก',
@@ -199,6 +201,7 @@ const Dashboard = () => {
       key: 'call_time',
       align: 'center',
       render: (text) => text || '-',
+      width: 180,
     },
   ]
 
@@ -216,6 +219,19 @@ const Dashboard = () => {
         .highlight-row {
           background-color: #d6f5d6 !important;
           transition: background-color 0.5s ease;
+        }
+        @media (max-width: 576px) {
+          .ant-table {
+            font-size: 12px;
+          }
+          .ant-table-cell {
+            padding: 8px 4px;
+            white-space: nowrap;
+          }
+          .ant-btn {
+            font-size: 12px;
+            padding: 4px 8px;
+          }
         }
       `}</style>
 
@@ -309,11 +325,10 @@ const Dashboard = () => {
               record.id || record.student_id || `row-${currentPage * pageSize + index}`
             }
             bordered
-            scroll={{ x: '100%' }}
+            scroll={{ x: 700 }}
           />
         </Spin>
 
-        {/* Pagination Controls */}
         <div style={{ textAlign: 'center', marginTop: 16 }}>
           <Button
             disabled={currentPage === 0}

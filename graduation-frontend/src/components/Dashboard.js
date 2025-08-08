@@ -36,10 +36,11 @@ const formatDateTimeThai = (date) => {
 const CurrentDateTime = () => {
   const [currentDateTime, setCurrentDateTime] = useState(new Date())
 
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentDateTime(new Date()), 1000)
-    return () => clearInterval(timer)
-  }, [])
+        useEffect(() => {
+          const timer = setInterval(() => setCurrentDateTime(new Date()), 1000)
+          return () => clearInterval(timer)
+        }, [setCurrentDateTime])  // เพิ่มไว้หาก ESLint เตือน
+
 
   return (
     <Text type="secondary" style={{ fontSize: 16 }}>
@@ -64,6 +65,8 @@ const Dashboard = () => {
   const [currentIndex, setCurrentIndex] = useState(-1)
   const [pageSize, setPageSize] = useState(10)
   const [currentPage, setCurrentPage] = useState(0)
+  const [selectedRowKey, setSelectedRowKey] = useState(null)
+  const [isEndReached, setIsEndReached] = useState(false)
 
   const fetchGraduates = useCallback(async () => {
     setLoading(true)
@@ -75,6 +78,7 @@ const Dashboard = () => {
         calculateSummary(data)
         setCurrentIndex(-1)
         setCurrentPage(0)
+        setIsEndReached(false)
       } else {
         message.error('โหลดข้อมูลไม่สำเร็จ')
       }
@@ -100,53 +104,58 @@ const Dashboard = () => {
     setSummary({ waiting, called_stage, called_done, absent, total: data.length })
   }
 
-  useEffect(() => {
-    fetchGraduates()
-    const interval = setInterval(fetchGraduates, 10000)
-    return () => clearInterval(interval)
-  }, [fetchGraduates])
-
   const totalPages = Math.ceil(graduates.length / pageSize)
   const currentPageData = graduates.slice(currentPage * pageSize, (currentPage + 1) * pageSize)
 
+  // ฟังก์ชันเลื่อนชื่อถัดไป (ใช้ใน autoScroll)
+  const callNextGraduate = useCallback(() => {
+    setCurrentIndex((prevIndex) => {
+      const maxIndex = currentPageData.length - 1
+      let nextIndex = prevIndex + 1
+      let nextPage = currentPage
+
+      if (nextIndex > maxIndex) {
+        nextPage = currentPage + 1 >= totalPages ? 0 : currentPage + 1
+        nextIndex = 0
+      }
+
+      const globalIndex = nextPage * pageSize + nextIndex
+      const isLastRow = globalIndex === graduates.length - 1
+      const isLastPage = nextPage === totalPages - 1
+
+      if (isLastPage && isLastRow) {
+        setIsEndReached(true)
+        setAutoScroll(false)
+        message.info('🎉 สิ้นสุดข้อมูลแล้ว')
+        return prevIndex
+      }
+
+      const newGrads = [...graduates]
+      const nowStr = formatDateTimeThai(new Date())
+      newGrads[globalIndex] = {
+        ...newGrads[globalIndex],
+        call_time: nowStr,
+        status: 'กำลังเข้ารับ',
+      }
+      setGraduates(newGrads)
+      setCurrentPage(nextPage)
+      return nextIndex
+    })
+  }, [graduates, currentPage, currentPageData.length, pageSize, totalPages])
+
   useEffect(() => {
-    if (!autoScroll) return undefined
-    if (graduates.length === 0) return undefined
+    fetchGraduates()
+  }, [fetchGraduates])
+
+  useEffect(() => {
+    if (!autoScroll || graduates.length === 0) return undefined
 
     const timer = setInterval(() => {
-      setCurrentIndex((prevIndex) => {
-        const maxIndex = currentPageData.length - 1
-        let nextIndex = prevIndex + 1
-
-        let nextPage = currentPage
-
-        if (nextIndex > maxIndex) {
-          nextPage = currentPage + 1
-          if (nextPage >= totalPages) nextPage = 0
-          setCurrentPage(nextPage)
-          nextIndex = 0
-        }
-
-        setGraduates((prevGrads) => {
-          const globalIndex = nextPage * pageSize + nextIndex
-          if (globalIndex >= prevGrads.length) return prevGrads
-
-          const newGrads = [...prevGrads]
-          const nowStr = formatDateTimeThai(new Date())
-          newGrads[globalIndex] = {
-            ...newGrads[globalIndex],
-            call_time: nowStr,
-            status: 'อยู่บนเวที',
-          }
-          return newGrads
-        })
-
-        return nextIndex
-      })
+      callNextGraduate()
     }, scrollSpeed)
 
     return () => clearInterval(timer)
-  }, [autoScroll, scrollSpeed, graduates.length, currentPage, currentPageData.length, pageSize, totalPages])
+  }, [autoScroll, scrollSpeed, callNextGraduate])
 
   const handleExport = () => {
     if (!graduates.length) return message.warning('ไม่มีข้อมูลให้ Export')
@@ -167,6 +176,25 @@ const Dashboard = () => {
 
   const rowClassName = (record, index) => (index === currentIndex ? 'highlight-row' : '')
 
+  const updateStatus = (newStatus) => {
+    if (selectedRowKey === null) return
+
+    const globalIndex = currentPage * pageSize + (selectedRowKey % pageSize)
+    if (globalIndex >= graduates.length) return
+
+    const nowStr = formatDateTimeThai(new Date())
+    const newGrads = [...graduates]
+
+    newGrads[globalIndex] = {
+      ...newGrads[globalIndex],
+      call_time: nowStr,
+      status: newStatus,
+    }
+
+    setGraduates(newGrads)
+    setSelectedRowKey(null)
+  }
+
   const columns = [
     {
       title: '#',
@@ -180,7 +208,6 @@ const Dashboard = () => {
       dataIndex: 'student_id',
       key: 'student_id',
       align: 'center',
-      width: 120,
     },
     {
       title: 'ชื่อ - นามสกุล',
@@ -193,7 +220,6 @@ const Dashboard = () => {
       key: 'status',
       render: getStatusTag,
       align: 'center',
-      width: 140,
     },
     {
       title: 'เวลาที่ถูกเรียก',
@@ -201,7 +227,6 @@ const Dashboard = () => {
       key: 'call_time',
       align: 'center',
       render: (text) => text || '-',
-      width: 180,
     },
   ]
 
@@ -211,6 +236,7 @@ const Dashboard = () => {
     setPageSize(value)
     setCurrentPage(0)
     setCurrentIndex(-1)
+    setIsEndReached(false)
   }
 
   return (
@@ -220,29 +246,22 @@ const Dashboard = () => {
           background-color: #d6f5d6 !important;
           transition: background-color 0.5s ease;
         }
-        @media (max-width: 576px) {
+        @media screen and (max-width: 768px) {
           .ant-table {
-            font-size: 12px;
-          }
-          .ant-table-cell {
-            padding: 8px 4px;
-            white-space: nowrap;
-          }
-          .ant-btn {
-            font-size: 12px;
-            padding: 4px 8px;
+            font-size: 13px;
           }
         }
       `}</style>
 
       <div
         style={{
-          padding: 24,
-          maxWidth: 1200,
-          margin: 'auto',
+          padding: '2rem 1rem',
+          maxWidth: '100%',
+          margin: '0 auto',
           backgroundColor: '#f9fafb',
           minHeight: '100vh',
           fontFamily: "'Sarabun', 'Segoe UI', sans-serif",
+          fontSize: '110%',
         }}
       >
         <div style={{ textAlign: 'center', marginBottom: 16 }}>
@@ -250,7 +269,7 @@ const Dashboard = () => {
           <Title level={3}>ปีการศึกษา {academicYear - 1}</Title>
           <CurrentDateTime />
           <Paragraph style={{ marginTop: 16 }}>
-            ระบบแสดงสถานะการเรียกชื่อเข้ารับปริญญาแบบเรียลไทม์ (รีเฟรชอัตโนมัติทุก 10 วินาที)
+            แสดงรายชื่อสถานะการเรียกชื่อเข้ารับปริญญา
           </Paragraph>
         </div>
 
@@ -263,7 +282,7 @@ const Dashboard = () => {
             { label: '🧾 รวมทั้งหมด', dataKey: 'total', color: '#333' },
           ].map(({ label, dataKey, color }) => (
             <Col xs={24} sm={12} md={8} lg={6} key={dataKey}>
-              <Card title={label} bordered={false}>
+              <Card title={label} bordered={false} style={{ width: '100%' }}>
                 <Title level={3} style={{ color, textAlign: 'center' }}>
                   {summary[dataKey]}
                 </Title>
@@ -273,15 +292,25 @@ const Dashboard = () => {
         </Row>
 
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <Space size="middle" wrap>
-            <Button type="primary" onClick={() => message.info('เรียกชื่อถัดไป')}>
+          <Space size="middle" wrap style={{ justifyContent: 'center', width: '100%' }}>
+            <Button
+              type="primary"
+              onClick={callNextGraduate}
+              disabled={graduates.length === 0 || isEndReached}
+            >
               📢 เรียกชื่อถัดไป
             </Button>
             <Button onClick={fetchGraduates}>🔄 โหลดข้อมูลใหม่</Button>
 
             <Button
               type={autoScroll ? 'danger' : 'primary'}
-              onClick={() => setAutoScroll((prev) => !prev)}
+              onClick={() => {
+                if (isEndReached) {
+                  message.info('🎉 สิ้นสุดข้อมูลแล้ว ไม่สามารถเลื่อนต่อได้')
+                  return
+                }
+                setAutoScroll((prev) => !prev)
+              }}
             >
               {autoScroll ? '⏸️ หยุดเลื่อนอัตโนมัติ' : '▶️ เริ่มเลื่อนอัตโนมัติ'}
             </Button>
@@ -291,6 +320,7 @@ const Dashboard = () => {
               onChange={(value) => setScrollSpeed(value)}
               style={{ width: 180 }}
             >
+              <Option value={700}>0.7 วินาที</Option>
               <Option value={1000}>1 วินาที</Option>
               <Option value={2000}>2 วินาที</Option>
               <Option value={3000}>3 วินาที</Option>
@@ -321,11 +351,18 @@ const Dashboard = () => {
             dataSource={currentPageData}
             pagination={false}
             rowClassName={rowClassName}
+            rowSelection={{
+              type: 'radio',
+              selectedRowKeys: selectedRowKey !== null ? [selectedRowKey] : [],
+              onChange: (selectedKeys) => {
+                setSelectedRowKey(selectedKeys[0])
+              },
+            }}
             rowKey={(record, index) =>
               record.id || record.student_id || `row-${currentPage * pageSize + index}`
             }
             bordered
-            scroll={{ x: 700 }}
+            scroll={{ x: 'max-content' }}
           />
         </Spin>
 
@@ -335,6 +372,7 @@ const Dashboard = () => {
             onClick={() => {
               setCurrentPage((prev) => Math.max(prev - 1, 0))
               setCurrentIndex(-1)
+              setIsEndReached(false)
             }}
             style={{ marginRight: 8 }}
           >
@@ -348,11 +386,35 @@ const Dashboard = () => {
             onClick={() => {
               setCurrentPage((prev) => Math.min(prev + 1, totalPages - 1))
               setCurrentIndex(-1)
+              setIsEndReached(false)
             }}
             style={{ marginLeft: 8 }}
           >
             ถัดไป ▶️
           </Button>
+        </div>
+
+        {isEndReached && (
+          <div style={{ textAlign: 'center', marginTop: 16, color: '#f5222d', fontWeight: 'bold' }}>
+            🎉 สิ้นสุดข้อมูลแล้ว
+          </div>
+        )}
+
+        <div style={{ textAlign: 'center', marginTop: 24 }}>
+          <Space size="middle" wrap>
+            <Button onClick={() => updateStatus('รอเข้ารับ')} disabled={selectedRowKey === null}>
+              ⏳ รอเรียก
+            </Button>
+            <Button onClick={() => updateStatus('อยู่บนเวที')} disabled={selectedRowKey === null}>
+              📋 อยู่บนเวที
+            </Button>
+            <Button onClick={() => updateStatus('รับเรียบร้อย')} disabled={selectedRowKey === null}>
+              ✅ เข้ารับเรียบร้อย
+            </Button>
+            <Button danger onClick={() => updateStatus('ขาด')} disabled={selectedRowKey === null}>
+              ❌ ขาดการเข้ารับ
+            </Button>
+          </Space>
         </div>
       </div>
     </>

@@ -45,10 +45,10 @@ const Navbar = () => {
         <Link to="/users">ผู้ใช้งาน</Link>
       </Menu.Item>
       <Menu.Item key="/dashboard">
-        <Link to="/dashboard">รายชื่อผู้เขารับปริญญาเรียลไทม์</Link>
+        <Link to="/dashboard">รายชื่อผู้เขารับปริญญา</Link>
       </Menu.Item>
       <Menu.Item key="/graduated">
-        <Link to="/graduated">ขานชื่อผู้เข้ารับปริญญา</Link>
+        <Link to="/graduated">ลำดับการขานชื่อผู้เข้ารับปริญญา</Link>
       </Menu.Item>
       <Menu.Item key="/manage">
         <Link to="/manage">การจัดการข้อมูล</Link>

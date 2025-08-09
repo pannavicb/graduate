@@ -309,6 +309,7 @@ const Dashboard = () => {
               onChange={(value) => setScrollSpeed(value)}
               style={{ width: 180 }}
             >
+              <Option value={700}> 0.7 วินาที</Option>
               <Option value={1000}>1 วินาที</Option>
               <Option value={2000}>2 วินาที</Option>
               <Option value={3000}>3 วินาที</Option>

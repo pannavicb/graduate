@@ -9,6 +9,7 @@ import {
   message,
   Typography,
 } from 'antd'
+import { QRCodeCanvas } from 'qrcode.react' // ✅ ใช้ QRCodeCanvas แทน QRCode
 
 const { Title } = Typography
 
@@ -114,7 +115,10 @@ const UserForm = ({ onUserAdded, selectedUser, onCancel }) => {
           ]}
           tooltip={selectedUser ? 'หากต้องการเปลี่ยนรหัสผ่าน กรุณากรอกใหม่' : ''}
         >
-          <Input.Password placeholder={selectedUser ? 'หากต้องการเปลี่ยนรหัสผ่าน' : ''} disabled={loading} />
+          <Input.Password
+            placeholder={selectedUser ? 'หากต้องการเปลี่ยนรหัสผ่าน' : ''}
+            disabled={loading}
+          />
         </Form.Item>
 
         <Form.Item>
@@ -133,6 +137,24 @@ const UserForm = ({ onUserAdded, selectedUser, onCancel }) => {
           </Space>
         </Form.Item>
       </Form>
+
+      {/* QR Code สำหรับ selectedUser */}
+      {selectedUser && (
+        <div style={{ marginTop: 32, textAlign: 'center' }}>
+          <Title level={5}>🔲 QR Code ของผู้ใช้งาน</Title>
+          <QRCodeCanvas
+            value={JSON.stringify({
+              id: selectedUser.id,
+              username: selectedUser.username,
+              email: selectedUser.email,
+            })}
+            size={128}
+          />
+          <div style={{ marginTop: 8 }}>
+            <small>🆔: {selectedUser.id}</small>
+          </div>
+        </div>
+      )}
     </Card>
   )
 }

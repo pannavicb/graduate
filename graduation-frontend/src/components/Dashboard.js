@@ -11,10 +11,14 @@ import {
   Tag,
   Space,
   Select,
+  Modal,
 } from 'antd'
 import axios from 'axios'
 import { saveAs } from 'file-saver'
 import Papa from 'papaparse'
+// import Barcode from 'react-barcode'
+// import { QRCode } from 'qrcode.react'
+import QRCode from 'qrcode.react'
 
 const { Title, Paragraph, Text } = Typography
 const { Option } = Select
@@ -36,11 +40,10 @@ const formatDateTimeThai = (date) => {
 const CurrentDateTime = () => {
   const [currentDateTime, setCurrentDateTime] = useState(new Date())
 
-        useEffect(() => {
-          const timer = setInterval(() => setCurrentDateTime(new Date()), 1000)
-          return () => clearInterval(timer)
-        }, [setCurrentDateTime])  // เพิ่มไว้หาก ESLint เตือน
-
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentDateTime(new Date()), 1000)
+    return () => clearInterval(timer)
+  }, [])
 
   return (
     <Text type="secondary" style={{ fontSize: 16 }}>
@@ -67,6 +70,15 @@ const Dashboard = () => {
   const [currentPage, setCurrentPage] = useState(0)
   const [selectedRowKey, setSelectedRowKey] = useState(null)
   const [isEndReached, setIsEndReached] = useState(false)
+
+  // Modal for showing graduate details
+  const [modalVisible, setModalVisible] = useState(false)
+  const [modalData, setModalData] = useState(null)
+
+  // Modal for editing status manually
+  const [statusModalVisible, setStatusModalVisible] = useState(false)
+  const [statusModalData, setStatusModalData] = useState(null)
+  const [statusModalValue, setStatusModalValue] = useState(null)
 
   const fetchGraduates = useCallback(async () => {
     setLoading(true)
@@ -107,7 +119,6 @@ const Dashboard = () => {
   const totalPages = Math.ceil(graduates.length / pageSize)
   const currentPageData = graduates.slice(currentPage * pageSize, (currentPage + 1) * pageSize)
 
-  // ฟังก์ชันเลื่อนชื่อถัดไป (ใช้ใน autoScroll)
   const callNextGraduate = useCallback(() => {
     setCurrentIndex((prevIndex) => {
       const maxIndex = currentPageData.length - 1
@@ -155,7 +166,7 @@ const Dashboard = () => {
     }, scrollSpeed)
 
     return () => clearInterval(timer)
-  }, [autoScroll, scrollSpeed, callNextGraduate])
+  }, [autoScroll, scrollSpeed, callNextGraduate, graduates.length])
 
   const handleExport = () => {
     if (!graduates.length) return message.warning('ไม่มีข้อมูลให้ Export')
@@ -169,7 +180,7 @@ const Dashboard = () => {
       case 'รอเข้ารับ': return <Tag color="green">รอเรียก</Tag>
       case 'อยู่บนเวที': return <Tag color="blue">อยู่บนเวที</Tag>
       case 'รับเรียบร้อย': return <Tag color="cyan">เข้ารับเรียบร้อย</Tag>
-      case 'ขาด': return <Tag color="red">ขาด</Tag>
+      case 'ขาด': return <Tag color="red">ขาดการเข้ารับ</Tag>
       default: return <Tag>{status || 'ไม่ระบุ'}</Tag>
     }
   }
@@ -192,7 +203,30 @@ const Dashboard = () => {
     }
 
     setGraduates(newGrads)
+    calculateSummary(newGrads)
     setSelectedRowKey(null)
+  }
+
+  // Update status manually via modal
+  const saveStatusModal = () => {
+    if (!statusModalValue) {
+      message.error('กรุณาเลือกสถานะ')
+      return
+    }
+    setGraduates((prev) => {
+      const newGrads = [...prev]
+      const index = newGrads.findIndex(g => g.student_id === statusModalData.student_id)
+      if (index !== -1) {
+        newGrads[index] = {
+          ...newGrads[index],
+          status: statusModalValue,
+          call_time: statusModalValue === 'รอเข้ารับ' ? null : formatDateTimeThai(new Date()),
+        }
+      }
+      calculateSummary(newGrads)
+      return newGrads
+    })
+    setStatusModalVisible(false)
   }
 
   const columns = [
@@ -208,6 +242,17 @@ const Dashboard = () => {
       dataIndex: 'student_id',
       key: 'student_id',
       align: 'center',
+      render: (text, record) => (
+        <Button
+          type="link"
+          onClick={() => {
+            setModalData(record)
+            setModalVisible(true)
+          }}
+        >
+          {text}
+        </Button>
+      ),
     },
     {
       title: 'ชื่อ - นามสกุล',
@@ -218,8 +263,19 @@ const Dashboard = () => {
       title: 'สถานะ',
       dataIndex: 'status',
       key: 'status',
-      render: getStatusTag,
       align: 'center',
+      render: (text, record) => (
+        <Button
+          type="link"
+          onClick={() => {
+            setStatusModalData(record)
+            setStatusModalValue(record.status)
+            setStatusModalVisible(true)
+          }}
+        >
+          {getStatusTag(text)}
+        </Button>
+      ),
     },
     {
       title: 'เวลาที่ถูกเรียก',
@@ -417,6 +473,59 @@ const Dashboard = () => {
           </Space>
         </div>
       </div>
+
+      {/* Modal แสดงรายละเอียด */}
+      <Modal
+        title="รายละเอียดนักศึกษา"
+        visible={modalVisible}
+        onCancel={() => setModalVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setModalVisible(false)}>
+            ปิด
+          </Button>,
+        ]}
+        centered
+      >
+        {modalData ? (
+          <div style={{ textAlign: 'center' }}>
+            {/* <Barcode value={modalData.student_id || ''} /> */}
+            <QRCode value={modalData.student_id || ''} size={150} style={{ marginTop: 16 }} />
+            <Title level={4} style={{ marginTop: 16, marginBottom: 12 }}>
+              {modalData.name}
+            </Title>
+            <Text strong>รหัสนักศึกษา:</Text> <Text>{modalData.student_id}</Text>
+            <br />
+            <Text strong>สถานะ:</Text> <Text>{modalData.status}</Text>
+            <br />
+            <Text strong>เวลาที่ถูกเรียก:</Text> <Text>{modalData.call_time || '-'}</Text>
+          </div>
+        ) : (
+          <Text>ไม่มีข้อมูล</Text>
+        )}
+      </Modal>
+
+      {/* Modal แก้ไขสถานะแบบ manual */}
+      <Modal
+        title="แก้ไขสถานะนักศึกษา"
+        visible={statusModalVisible}
+        onCancel={() => setStatusModalVisible(false)}
+        onOk={saveStatusModal}
+        okText="บันทึก"
+        cancelText="ยกเลิก"
+        centered
+      >
+        <Select
+          style={{ width: '100%' }}
+          value={statusModalValue}
+          onChange={setStatusModalValue}
+          placeholder="เลือกสถานะ"
+        >
+          <Option value="รอเข้ารับ">รอเข้ารับ</Option>
+          <Option value="อยู่บนเวที">อยู่บนเวที</Option>
+          <Option value="รับเรียบร้อย">รับเรียบร้อย</Option>
+          <Option value="ขาด">ขาด</Option>
+        </Select>
+      </Modal>
     </>
   )
 }

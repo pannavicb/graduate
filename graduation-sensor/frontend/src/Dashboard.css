@@ -1,0 +1,12 @@
+.active-row {
+  background-color: #fff3cd !important; /* เหลืองอ่อน */
+  transition: background-color 0.5s ease;
+}
+
+.active-row:hover {
+  background-color: #ffe8a1 !important;
+}
+
+.active-row {
+  background-color: #fff7e6; /* สีสว่างเหลือง */
+}

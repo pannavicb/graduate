@@ -25,11 +25,11 @@ const db = mysql.createPool({
 app.post('/graduates/clear-data', async (req, res) => {
     
   try {
-    await db.query('DELETE FROM predata_graduates');
-    await db.query('DELETE FROM postdata_graduates');
-    await db.query('DELETE FROM graduates');
+    await db.query('TRUNCATE TABLE graduates');
+    await db.query('TRUNCATE TABLE postdata_graduates');
+    await db.query('TRUNCATE TABLE predata_graduates');
     // res.json({ message: 'Cleared postdata_graduates and predata_graduates' });
-    res.json({ message: 'Cleared postdata_graduates and graduates' });
+    res.json({ message: 'Cleared predata_graduates, postdata_graduates and graduates' });
 
   } catch (err) {
     console.error(err);

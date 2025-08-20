@@ -24,6 +24,7 @@ function generateStudentId(year, faculty, major, order) {
 
     console.log('🚀 เชื่อมต่อฐานข้อมูลสำเร็จ');
 
+    // ล้างข้อมูลและรีเซ็ต AUTO_INCREMENT ของ order_no
     await db.query('TRUNCATE TABLE predata_graduates');
     console.log('🗑️ ล้างข้อมูลเรียบร้อย');
 
@@ -35,14 +36,17 @@ function generateStudentId(year, faculty, major, order) {
 
     for (const year of years) {
       for (const faculty of faculties) {
-        for (let major=1; major<=10; major++) {  // 10 สาขา
-          for (let order=1; order<=99; order++) {
+        for (let major = 1; major <= 10; major++) {  // 10 สาขา
+          for (let order = 1; order <= 99; order++) {
             if (total >= 5000) break;
+
             const studentId = generateStudentId(year, faculty, major, order);
             const name = randomThaiName();
-            const rfid = `RFID${String(total+1).padStart(10,'0')}`;
+            const rfid = `RFID${String(total + 1).padStart(10,'0')}`;
             const queueOrder = total + 1;
             const status = 'รอเข้ารับ';
+
+            // ไม่ต้องใส่ order_no เพราะ MySQL จะจัดการ AUTO_INCREMENT
             graduates.push([studentId, name, rfid, queueOrder, status]);
             total++;
           }
@@ -53,10 +57,13 @@ function generateStudentId(year, faculty, major, order) {
       if (total >= 5000) break;
     }
 
-    await db.query(
-      'INSERT INTO predata_graduates (student_id, name, rfid, queue_order, status) VALUES ?',
-      [graduates]
-    );
+    // Bulk insert ข้อมูล
+    const sql = `
+      INSERT INTO predata_graduates 
+      (student_id, name, rfid, queue_order, status) 
+      VALUES ?
+    `;
+    await db.query(sql, [graduates]);
 
     console.log(`✅ เพิ่มข้อมูล ${graduates.length} คนเรียบร้อย`);
     await db.end();
